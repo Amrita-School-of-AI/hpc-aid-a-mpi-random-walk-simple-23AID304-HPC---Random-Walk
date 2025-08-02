@@ -65,6 +65,31 @@ void walker_process()
     //       "Rank X: Walker finished in Y steps."
     //    b. Send an integer message to the controller (rank 0) to signal completion.
     //    c. Break the loop.
+    int current_pos = 0;   // Position of the walker
+int step_count = 0;    // Number of steps taken
+
+// Loop for a maximum of max_steps
+for (step_count = 0; step_count < max_steps; step_count++)
+{
+    // Randomly move left (-1) or right (+1)
+    int move_dir = (rand() % 2 == 0) ? -1 : 1;
+    current_pos += move_dir;
+
+    // Check if walker moved outside the domain [-domain_size, +domain_size]
+    if (current_pos < -domain_size || current_pos > domain_size)
+    {
+        step_count++; 
+        break;        
+    }
+}
+
+// Print a message including the keyword "finished"
+std::cout << "Rank " << world_rank
+          << ": Walker finished in " << step_count << " steps." << std::endl;
+
+// Send the number of steps taken to the controller (rank 0)
+int finish_signal = step_count;
+MPI_Send(&finish_signal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 }
 
 void controller_process()
@@ -76,4 +101,16 @@ void controller_process()
     //    a message from any walker that finishes.
     // 4. After receiving messages from all walkers, print a final summary message.
     //    For example: "Controller: All X walkers have finished."
+    int total_walkers = world_size - 1;  // Number of walker processes
+    for (int w = 0; w < total_walkers; w++)
+    {
+    int steps_reported;
+    MPI_Status recv_status;
+    MPI_Recv(&steps_reported, 1, MPI_INT, MPI_ANY_SOURCE, 0,
+             MPI_COMM_WORLD, &recv_status);
+}
+
+
+std::cout << "Controller: All " << total_walkers
+          << " walkers have finished." << std::endl;
 }
